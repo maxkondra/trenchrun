@@ -70,11 +70,25 @@ public class TrenchRun {
     }
 
     private String computerDecideAMove() {
+        return miniMax(generateMoves(false, PlayerTieJustMovedSideways, ComputerTieJustMovedSideways).getMovesC());
+    }
+
+    private String miniMax(int[][] moves) {
+        String bestMove = "";
+        int bestScore = -10000;
+        int i = 0;
+        while(moves[i][0] != 0 || moves[i][1] != 0 || moves[i][2] != 0 || moves[i][3] != 0){
+            makeTempMove(moves[i], false);
+        }
+        return bestMove;
+    }
+
+    private void makeTempMove(int[] move, boolean b) {
 
     }
 
 
-    private MoveAndScoreHolder evaluatePosition(boolean humanMove, int[][] boardState, boolean playerTieJustMovedSideways, boolean computerTieJustMovedSideways){
+    private MoveAndScoreHolder evaluatePosition(boolean humanMove, int[][] GameBoard, boolean playerTieJustMovedSideways, boolean computerTieJustMovedSideways){
         int score = 0;
         int[][] moves;
         int[][] movesC;
@@ -82,13 +96,13 @@ public class TrenchRun {
         int[][] movablePiecesH;
         MoveAndMovablePiecesHolder moveAndMovablePiecesHolder;
 
-        if(boardState[1][3] != 3){
+        if(GameBoard[1][3] != 3){
             return new MoveAndScoreHolder(10000, null);
         }
-        if(boardState[5][3] != 7){
+        if(GameBoard[5][3] != 7){
             return new MoveAndScoreHolder(-10000, null);
         }
-        moveAndMovablePiecesHolder = generateMoves(humanMove, boardState, playerTieJustMovedSideways, computerTieJustMovedSideways);
+        moveAndMovablePiecesHolder = generateMoves(humanMove, playerTieJustMovedSideways, computerTieJustMovedSideways);
         movesC = moveAndMovablePiecesHolder.getMovesC();
         movablePiecesC = moveAndMovablePiecesHolder.getMovablePiecesC();
         movablePiecesH = moveAndMovablePiecesHolder.getMovablePiecesH();
@@ -98,18 +112,18 @@ public class TrenchRun {
         }
 
         for(int i=0;i<movablePiecesC.length;i++){
-            if(boardState[movablePiecesC[i][0]][movablePiecesC[i][1]] == 5){
+            if(GameBoard[movablePiecesC[i][0]][movablePiecesC[i][1]] == 5){
                 score += 50;
             }
-            if(boardState[movablePiecesC[i][0]][movablePiecesC[i][1]] == 6){
+            if(GameBoard[movablePiecesC[i][0]][movablePiecesC[i][1]] == 6){
                 score += 40;
             }
         }
         for(int i=0;i<movablePiecesH.length;i++){
-            if(boardState[movablePiecesH[i][0]][movablePiecesH[i][1]] == 5){
+            if(GameBoard[movablePiecesH[i][0]][movablePiecesH[i][1]] == 5){
                 score -= 50;
             }
-            if(boardState[movablePiecesH[i][0]][movablePiecesH[i][1]] == 6){
+            if(GameBoard[movablePiecesH[i][0]][movablePiecesH[i][1]] == 6){
                 score -= 40;
             }
         }
@@ -146,7 +160,7 @@ public class TrenchRun {
         }
     }
 
-    private MoveAndMovablePiecesHolder generateMoves(boolean humanMove, int[][] boardState, boolean playerTieJustMovedSideways, boolean computerTieJustMovedSideways){
+    private MoveAndMovablePiecesHolder generateMoves(boolean humanMove, boolean playerTieJustMovedSideways, boolean computerTieJustMovedSideways){
         int[][] movesC = new int[100][4];
         int[][] movesH = new int[100][4];
         int[][] movablePieces;
@@ -157,7 +171,7 @@ public class TrenchRun {
         //Get all pieces from board
         for(int i=0; i<7; i++){
             for(int j=0; j<7;j++){
-                if(boardState[i][j] == 5 || boardState[i][j] == 6){
+                if(GameBoard[i][j] == 5 || GameBoard[i][j] == 6){
                     movablePiecesC[k][0] = i;
                     movablePiecesC[k][1] = j;
                     k++;
@@ -166,7 +180,7 @@ public class TrenchRun {
         }
         for(int i=0; i<7; i++){
             for(int j=0; j<7;j++){
-                if(boardState[i][j] == 1 || boardState[i][j] == 2){
+                if(GameBoard[i][j] == 1 || GameBoard[i][j] == 2){
                     movablePiecesH[k][0] = i;
                     movablePiecesH[k][1] = j;
                     k++;
@@ -182,34 +196,34 @@ public class TrenchRun {
 
         //Determine all moves for pieces
         for(int i =0; i<k; i++){
-            if(boardState[movablePieces[i][0]][movablePieces[i][1]] == 1 || boardState[movablePieces[i][0]][movablePieces[i][1]] == 5){
+            if(GameBoard[movablePieces[i][0]][movablePieces[i][1]] == 1 || GameBoard[movablePieces[i][0]][movablePieces[i][1]] == 5){
                 //Tie Fighters
                 if(humanMove){
                     int x = movablePieces[i][0]+1;
                     int y = movablePieces[i][1];
                     //Forward for human Tie's
-                    while(x < 7 && (boardState[x][y] == 0 || boardState[x][y] == 5 || boardState[x][y] == 6)){
+                    while(x < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6)){
                         movesH[l][0] = movablePieces[i][1];
                         movesH[l][1] = movablePieces[i][0];
                         movesH[l][2] = y;
                         movesH[l][3] = x;
                         l++;
-                        if(boardState[x][y] != 0){
+                        if(GameBoard[x][y] != 0){
                             break;
                         }
                         x++;
                     }
                     x = movablePieces[i][0]-1;
                     //Back for human Tie's
-                    while(x > -1 && (boardState[x][y] == 0 || boardState[x][y] == 5 || boardState[x][y] == 6 || boardState[x][y] == 7)){
-                        if(boardState[x][y] == 5 || boardState[x][y] == 6 || boardState[x][y] == 7){
+                    while(x > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6 || GameBoard[x][y] == 7)){
+                        if(GameBoard[x][y] == 5 || GameBoard[x][y] == 6 || GameBoard[x][y] == 7){
                             movesH[l][0] = movablePieces[i][1];
                             movesH[l][1] = movablePieces[i][0];
                             movesH[l][2] = y;
                             movesH[l][3] = x;
                             l++;
                         }
-                        if(boardState[x][y] != 0){
+                        if(GameBoard[x][y] != 0){
                             break;
                         }
                         x--;
@@ -219,26 +233,26 @@ public class TrenchRun {
                         x = movablePieces[i][0];
                         y = movablePieces[i][1]+1;
                         //Right
-                        while(y < 7 && (boardState[x][y] == 0 || boardState[x][y] == 5 || boardState[x][y] == 6)){
+                        while(y < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6)){
                             movesH[l][0] = movablePieces[i][1];
                             movesH[l][1] = movablePieces[i][0];
                             movesH[l][2] = y;
                             movesH[l][3] = x;
                             l++;
-                            if(boardState[x][y] != 0){
+                            if(GameBoard[x][y] != 0){
                                 break;
                             }                            
                             y++;
                         }
                         y = movablePieces[i][1]-1;
                         //Left
-                        while(y > -1 && (boardState[x][y] == 0 || boardState[x][y] == 5 || boardState[x][y] == 6)){
+                        while(y > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6)){
                             movesH[l][0] = movablePieces[i][1];
                             movesH[l][1] = movablePieces[i][0];
                             movesH[l][2] = y;
                             movesH[l][3] = x;
                             l++;
-                            if(boardState[x][y] != 0){
+                            if(GameBoard[x][y] != 0){
                                 break;
                             }                            
                             y--;
@@ -249,13 +263,13 @@ public class TrenchRun {
                     int y = movablePieces[i][1];
 
                     //Forward for Computer Tie's
-                    while(x > -1 && (boardState[x][y] == 0 || boardState[x][y] == 1 || boardState[x][y] == 2)){
+                    while(x > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2)){
                         movesC[l][0] = movablePieces[i][1];
                         movesC[l][1] = movablePieces[i][0];
                         movesC[l][2] = y;
                         movesC[l][3] = x;
                         l++;
-                        if(boardState[x][y] != 0){
+                        if(GameBoard[x][y] != 0){
                             break;
                         }
                         x--;
@@ -263,15 +277,15 @@ public class TrenchRun {
 
                     x = movablePieces[i][0]+1;
                     //Back for Computer Tie's
-                    while(x < 7 && (boardState[x][y] == 0 || boardState[x][y] == 1 || boardState[x][y] == 2 || boardState[x][y] == 3)){
-                        if(boardState[x][y] == 1 || boardState[x][y] == 2 || boardState[x][y] == 3){
+                    while(x < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2 || GameBoard[x][y] == 3)){
+                        if(GameBoard[x][y] == 1 || GameBoard[x][y] == 2 || GameBoard[x][y] == 3){
                             movesC[l][0] = movablePieces[i][1];
                             movesC[l][1] = movablePieces[i][0];
                             movesC[l][2] = y;
                             movesC[l][3] = x;
                             l++;
                         }
-                        if(boardState[x][y] != 0){
+                        if(GameBoard[x][y] != 0){
                             break;
                         }
                         x++;
@@ -281,46 +295,46 @@ public class TrenchRun {
                         x = movablePieces[i][0];
                         y = movablePieces[i][1] + 1;
                         //Right
-                        while (y < 7 && (boardState[x][y] == 0 || boardState[x][y] == 1 || boardState[x][y] == 2)) {
+                        while (y < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2)) {
                             movesC[l][0] = movablePieces[i][1];
                             movesC[l][1] = movablePieces[i][0];
                             movesC[l][2] = y;
                             movesC[l][3] = x;
                             l++;
-                            if(boardState[x][y] != 0){
+                            if(GameBoard[x][y] != 0){
                                 break;
                             }                            
                             y++;
                         }
                         y = movablePieces[i][1] - 1;
                         //Left
-                        while (y > -1 && (boardState[x][y] == 0 || boardState[x][y] == 1 || boardState[x][y] == 2)) {
+                        while (y > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2)) {
                             movesC[l][0] = movablePieces[i][1];
                             movesC[l][1] = movablePieces[i][0];
                             movesC[l][2] = y;
                             movesC[l][3] = x;
                             l++;
-                            if(boardState[x][y] != 0){
+                            if(GameBoard[x][y] != 0){
                                 break;
                             }                            
                             y--;
                         }
                     }
                 }
-            }else if(boardState[movablePieces[i][0]][movablePieces[i][1]] == 2 || boardState[movablePieces[i][0]][movablePieces[i][1]] == 6){
+            }else if(GameBoard[movablePieces[i][0]][movablePieces[i][1]] == 2 || GameBoard[movablePieces[i][0]][movablePieces[i][1]] == 6){
                 //X Wings
                 if(humanMove){
 
                     //Human Forward (Up) Right X Wing
                     int x = movablePieces[i][0]+1;
                     int y = movablePieces[i][1]+1;
-                    while(x < 7 && y < 7 && (boardState[x][y] == 0 || boardState[x][y] == 5 || boardState[x][y] == 6)){
+                    while(x < 7 && y < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6)){
                         movesH[l][0] = movablePieces[i][1];
                         movesH[l][1] = movablePieces[i][0];
                         movesH[l][2] = y;
                         movesH[l][3] = x;
                         l++;
-                        if(boardState[x][y] != 0){
+                        if(GameBoard[x][y] != 0){
                             break;
                         }
                         x++;
@@ -330,13 +344,13 @@ public class TrenchRun {
                     //Human Forward (Up) Left X Wing
                     x = movablePieces[i][0]+1;
                     y = movablePieces[i][1]-1;
-                    while(x < 7 && y > -1 && (boardState[x][y] == 0 || boardState[x][y] == 5 || boardState[x][y] == 6)){
+                    while(x < 7 && y > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6)){
                         movesH[l][0] = movablePieces[i][1];
                         movesH[l][1] = movablePieces[i][0];
                         movesH[l][2] = y;
                         movesH[l][3] = x;
                         l++;
-                        if(boardState[x][y] != 0){
+                        if(GameBoard[x][y] != 0){
                             break;
                         }
                         x++;
@@ -346,15 +360,15 @@ public class TrenchRun {
                     //Human Backward (Down) Right X Wing
                     x = movablePieces[i][0]-1;
                     y = movablePieces[i][1]+1;
-                    while(x > -1 && y < 7 && (boardState[x][y] == 0 || boardState[x][y] == 5 || boardState[x][y] == 6 || boardState[x][y] == 7)){
-                        if(boardState[x][y] == 5 || boardState[x][y] == 6 || boardState[x][y] == 7){
+                    while(x > -1 && y < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6 || GameBoard[x][y] == 7)){
+                        if(GameBoard[x][y] == 5 || GameBoard[x][y] == 6 || GameBoard[x][y] == 7){
                             movesH[l][0] = movablePieces[i][1];
                             movesH[l][1] = movablePieces[i][0];
                             movesH[l][2] = y;
                             movesH[l][3] = x;
                             l++;
                         }
-                        if(boardState[x][y] != 0){
+                        if(GameBoard[x][y] != 0){
                             break;
                         }
                         x--;
@@ -364,15 +378,15 @@ public class TrenchRun {
                     //Human Backward (Down) Left X Wing
                     x = movablePieces[i][0]-1;
                     y = movablePieces[i][1]-1;
-                    while(x > -1 && y > -1 && (boardState[x][y] == 0 || boardState[x][y] == 5 || boardState[x][y] == 6 || boardState[x][y] == 7)){
-                        if(boardState[x][y] == 5 || boardState[x][y] == 6 || boardState[x][y] == 7){
+                    while(x > -1 && y > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6 || GameBoard[x][y] == 7)){
+                        if(GameBoard[x][y] == 5 || GameBoard[x][y] == 6 || GameBoard[x][y] == 7){
                             movesH[l][0] = movablePieces[i][1];
                             movesH[l][1] = movablePieces[i][0];
                             movesH[l][2] = y;
                             movesH[l][3] = x;
                             l++;
                         }
-                        if(boardState[x][y] != 0){
+                        if(GameBoard[x][y] != 0){
                             break;
                         }
                         x--;
@@ -382,13 +396,13 @@ public class TrenchRun {
                     //Computer Forward (Down) Right X Wing
                     int x = movablePieces[i][0]-1;
                     int y = movablePieces[i][1]+1;
-                    while(x > -1 && y < 7 && (boardState[x][y] == 0 || boardState[x][y] == 1 || boardState[x][y] == 2)){
+                    while(x > -1 && y < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2)){
                         movesC[l][0] = movablePieces[i][1];
                         movesC[l][1] = movablePieces[i][0];
                         movesC[l][2] = y;
                         movesC[l][3] = x;
                         l++;
-                        if(boardState[x][y] != 0){
+                        if(GameBoard[x][y] != 0){
                             break;
                         }
                         x--;
@@ -398,13 +412,13 @@ public class TrenchRun {
                     //Computer Forward (Down) Left X Wing
                     x = movablePieces[i][0]-1;
                     y = movablePieces[i][1]-1;
-                    while(x > -1 && y > -1 && (boardState[x][y] == 0 || boardState[x][y] == 1 || boardState[x][y] == 2)){
+                    while(x > -1 && y > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2)){
                         movesC[l][0] = movablePieces[i][1];
                         movesC[l][1] = movablePieces[i][0];
                         movesC[l][2] = y;
                         movesC[l][3] = x;
                         l++;
-                        if(boardState[x][y] != 0){
+                        if(GameBoard[x][y] != 0){
                             break;
                         }
                         x--;
@@ -414,15 +428,15 @@ public class TrenchRun {
                     //Computer Backward (Up) Right X Wing
                     x = movablePieces[i][0]+1;
                     y = movablePieces[i][1]+1;
-                    while(x < 7 && y < 7 && (boardState[x][y] == 0 || boardState[x][y] == 1 || boardState[x][y] == 2 || boardState[x][y] == 3)){
-                        if(boardState[x][y] == 1 || boardState[x][y] == 2 || boardState[x][y] == 3){
+                    while(x < 7 && y < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2 || GameBoard[x][y] == 3)){
+                        if(GameBoard[x][y] == 1 || GameBoard[x][y] == 2 || GameBoard[x][y] == 3){
                             movesC[l][0] = movablePieces[i][1];
                             movesC[l][1] = movablePieces[i][0];
                             movesC[l][2] = y;
                             movesC[l][3] = x;
                             l++;
                         }
-                        if(boardState[x][y] != 0){
+                        if(GameBoard[x][y] != 0){
                             break;
                         }
                         x++;
@@ -432,15 +446,15 @@ public class TrenchRun {
                     //Computer Backward (Up) Left X Wing
                     x = movablePieces[i][0]+1;
                     y = movablePieces[i][1]-1;
-                    while(x < 7 && y > -1 && (boardState[x][y] == 0 || boardState[x][y] == 1 || boardState[x][y] == 2 || boardState[x][y] == 3)){
-                        if(boardState[x][y] == 1 || boardState[x][y] == 2 || boardState[x][y] == 3){
+                    while(x < 7 && y > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2 || GameBoard[x][y] == 3)){
+                        if(GameBoard[x][y] == 1 || GameBoard[x][y] == 2 || GameBoard[x][y] == 3){
                             movesC[l][0] = movablePieces[i][1];
                             movesC[l][1] = movablePieces[i][0];
                             movesC[l][2] = y;
                             movesC[l][3] = x;
                             l++;
                         }
-                        if(boardState[x][y] != 0){
+                        if(GameBoard[x][y] != 0){
                             break;
                         }
                         x++;
@@ -460,13 +474,13 @@ public class TrenchRun {
         }
 
         if(humanMove){
-            moves = generateMoves(humanMove, GameBoard, PlayerTieJustMovedSideways, ComputerTieJustMovedSideways).movablePiecesH;
+            moves = generateMoves(humanMove, PlayerTieJustMovedSideways, ComputerTieJustMovedSideways).movablePiecesH;
             if(moves[0][0] == 0 && moves[0][1] == 0 && moves[0][2] == 0 && moves[0][3] == 0){
                 Winner = 2;
                 return true;
             }
         }else{
-            moves = generateMoves(humanMove, GameBoard, PlayerTieJustMovedSideways, ComputerTieJustMovedSideways).movablePiecesH;
+            moves = generateMoves(humanMove, PlayerTieJustMovedSideways, ComputerTieJustMovedSideways).movablePiecesH;
             if(moves[0][0] == 0 && moves[0][1] == 0 && moves[0][2] == 0 && moves[0][3] == 0){
                 Winner = 1;
                 return true;
