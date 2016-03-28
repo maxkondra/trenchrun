@@ -74,17 +74,60 @@ public class TrenchRun {
     }
 
     private String miniMax(int[][] moves) {
-        String bestMove = "";
+        int[] bestMove;
         int bestScore = -10000;
+        int moveScore;
         int i = 0;
         while(moves[i][0] != 0 || moves[i][1] != 0 || moves[i][2] != 0 || moves[i][3] != 0){
             makeTempMove(moves[i], false);
+            moveScore = min(0);
+            if(moveScore > bestScore){
+                bestScore = moveScore;
+                bestMove = moves[i];
+            }
+            undoTempMove();
         }
-        return bestMove;
+        return "";//TODO int[] to string
     }
 
-    private void makeTempMove(int[] move, boolean b) {
+    private int min(int depth) {
+        if (isGameOver(true)){
+            return 10000;
+        }
+        if (depth = maxDepth){
+            return evaluatePosition(true, GameBoard, PlayerTieJustMovedSideways, ComputerTieJustMovedSideways).getScore();
+        }
+        int bestScore = 10000;
+        int[][] moves =
+    }
 
+    private void makeTempMove(int[] move, boolean humanMove) {
+        int w = move[0], x = move[1], y = move[2], z = move[3];
+        movesOnBoard.push(new int[]{y, z, w, x, GameBoard[z][y], PlayerTieJustMovedSideways ? 1 : 0, ComputerTieJustMovedSideways ? 1 : 0});
+        GameBoard[z][y] = GameBoard[x][w];
+        GameBoard[x][w] = 0;
+
+        if(humanMove){
+            if(GameBoard[z][y] == 1){
+                if(z == x && w != y){
+                    PlayerTieJustMovedSideways = true;
+                }else{
+                    PlayerTieJustMovedSideways = false;
+                }
+            }else{
+                PlayerTieJustMovedSideways = false;
+            }
+        }else {
+            if(GameBoard[z][y] == 5){
+                if(z == x && w != y){
+                    ComputerTieJustMovedSideways = true;
+                }else{
+                    ComputerTieJustMovedSideways = false;
+                }
+            }else{
+                ComputerTieJustMovedSideways = false;
+            }
+        }
     }
 
 
