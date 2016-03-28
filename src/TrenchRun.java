@@ -13,6 +13,7 @@ public class TrenchRun {
     private static final String ANSI_WHITE = "\u001B[37m";
 
     private int[][] GameBoard;
+    private int MaxDepth = 4;
     private Stack<int[]> movesOnBoard;
     private boolean GameOver = false;
     private int Winner = 0; // 0 = no one, 1 = human, 2 = computer
@@ -51,54 +52,150 @@ public class TrenchRun {
 
         //if player, ask for move
         if(humanFirst){
-            getAndMakeMove();
+            humanGetAndMakeMove();
         }
         while (!GameOver){
             //Computer decides and makes a move
-            makeFinalMove(computerDecideAMove(), false);
-            GameOver = isGameOver(true);
-
-            //Display Board
-            displayBoard();
+            computerMakeMove();
 
             //Get Player Input
-            getAndMakeMove();
-            GameOver = isGameOver(false);
+            humanGetAndMakeMove();
         }
 
         //determine winner
+        String winner;
+        switch (Winner){
+            case 0:
+                winner = "Draw";
+                break;
+            case 1:
+                winner = "Human";
+                break;
+            case 2:
+                winner = "Computer";
+                break;
+            default:
+                winner = "Glitch in the Matrix";
+                break;
+        }
+
+        System.out.println("And the winner is: " + winner + "! Congratulations");
     }
 
-    private String computerDecideAMove() {
-        return miniMax(generateMoves(false, PlayerTieJustMovedSideways, ComputerTieJustMovedSideways).getMovesC());
+    private void computerMakeMove() {
+        FinalComputerMoveHolder finalComputerMoveHolder = computerDecideAMove();
+        String move = finalComputerMoveHolder.getMove();
+        String convertedMove = finalComputerMoveHolder.getConvertedMove();
+        makeFinalMove(move, false);
+
+        System.out.println("COMPUTER MOVES " + move + "   (" + convertedMove + ")\n");
+
+        //Display Board
+        displayBoard();
+
+        GameOver = isGameOver(true);
     }
 
-    private String miniMax(int[][] moves) {
-        int[] bestMove;
-        int bestScore = -10000;
+    private FinalComputerMoveHolder computerDecideAMove() {
+        OneMoveAndScoreHolder moveAndScore = miniMax(MaxDepth);
+        int[] move = moveAndScore.getMove();
+
+        return new FinalComputerMoveHolder(
+                String.valueOf(new char[]{
+                        intAxisToLetter(move[0]),
+                        Character.forDigit(move[1]+1, 10),
+                        intAxisToLetter(move[2]),
+                        Character.forDigit(move[3]+1, 10)}),
+                String.valueOf(new char[]{
+                        intAxisToLetter(convertIntToFlippedBoard(move[0])),
+                        Character.forDigit(convertIntToFlippedBoard(move[1])+1, 10),
+                        intAxisToLetter(convertIntToFlippedBoard(move[2])),
+                        Character.forDigit(convertIntToFlippedBoard(move[3])+1, 10)}));
+    }
+
+    private OneMoveAndScoreHolder miniMax(int maxDepth) {
+        OneMoveAndScoreHolder best = new OneMoveAndScoreHolder(-10000, null);
+        int bestScore = best.getScore();
         int moveScore;
         int i = 0;
+        int[][] moves = generateMovesC().getMoves();
         while(moves[i][0] != 0 || moves[i][1] != 0 || moves[i][2] != 0 || moves[i][3] != 0){
             makeTempMove(moves[i], false);
-            moveScore = min(0);
+            moveScore = min(0, maxDepth);
             if(moveScore > bestScore){
                 bestScore = moveScore;
-                bestMove = moves[i];
+                best.setMove(moves[i]);
             }
             undoTempMove();
+            i++;
         }
-        return "";//TODO int[] to string
+
+        best.setScore(bestScore);
+        return best;
     }
 
-    private int min(int depth) {
+    private int min(int depth, int maxDepth) {
         if (isGameOver(true)){
             return 10000;
         }
-        if (depth = maxDepth){
-            return evaluatePosition(true, GameBoard, PlayerTieJustMovedSideways, ComputerTieJustMovedSideways).getScore();
+        if (depth == maxDepth){
+            return evaluatePosition(true);
         }
-        int bestScore = 10000;
-        int[][] moves =
+        OneMoveAndScoreHolder best = new OneMoveAndScoreHolder(10000, null);
+        int bestScore = best.getScore();
+        int moveScore;
+        int[][] moves = generateMovesH().getMoves();
+
+        int i = 0;
+        while(moves[i][0] != 0 || moves[i][1] != 0 || moves[i][2] != 0 || moves[i][3] != 0){
+            makeTempMove(moves[i], true);
+            moveScore = max(depth+1, maxDepth);
+            if(moveScore < bestScore){
+                bestScore = moveScore;
+                best.setMove(moves[i]);
+            }
+            undoTempMove();
+            i++;
+        }
+
+        return bestScore;
+    }
+
+    private int max(int depth, int maxDepth) {
+        if (isGameOver(true)){
+            return -10000;
+        }
+        if (depth == maxDepth){
+            return evaluatePosition(false);
+        }
+        OneMoveAndScoreHolder best = new OneMoveAndScoreHolder(-10000, null);
+        int bestScore = best.getScore();
+        int moveScore;
+        int[][] moves = generateMovesC().getMoves();
+
+        int i = 0;
+        while(moves[i][0] != 0 || moves[i][1] != 0 || moves[i][2] != 0 || moves[i][3] != 0){
+            makeTempMove(moves[i], false);
+            moveScore = min(depth+1, maxDepth);
+            if(moveScore > bestScore){
+                bestScore = moveScore;
+                best.setMove(moves[i]);
+            }
+            undoTempMove();
+            i++;
+        }
+        
+        return bestScore;
+    }
+
+    private void undoTempMove() {
+        int[] move = movesOnBoard.pop();
+        int w = move[0], x = move[1], y = move[2], z = move[3], piece = move[4];
+        PlayerTieJustMovedSideways = move[5] == 1;
+        ComputerTieJustMovedSideways = move[6] == 1;
+
+        GameBoard[z][y] = GameBoard[x][w];
+        GameBoard[x][w] = piece;
     }
 
     private void makeTempMove(int[] move, boolean humanMove) {
@@ -131,27 +228,29 @@ public class TrenchRun {
     }
 
 
-    private MoveAndScoreHolder evaluatePosition(boolean humanMove, int[][] GameBoard, boolean playerTieJustMovedSideways, boolean computerTieJustMovedSideways){
+    private int evaluatePosition(boolean humanMove){
         int score = 0;
-        int[][] moves;
+        //int[][] moves;
         int[][] movesC;
         int[][] movablePiecesC;
         int[][] movablePiecesH;
-        MoveAndMovablePiecesHolder moveAndMovablePiecesHolder;
+        MoveAndMovablePiecesHolder moveAndMovablePiecesHolderC;
+        MoveAndMovablePiecesHolder moveAndMovablePiecesHolderH;
 
         if(GameBoard[1][3] != 3){
-            return new MoveAndScoreHolder(10000, null);
+            return 10000; //new MovesAndScoreHolder(10000, null);
         }
         if(GameBoard[5][3] != 7){
-            return new MoveAndScoreHolder(-10000, null);
+            return -10000; //new MovesAndScoreHolder(-10000, null);
         }
-        moveAndMovablePiecesHolder = generateMoves(humanMove, playerTieJustMovedSideways, computerTieJustMovedSideways);
-        movesC = moveAndMovablePiecesHolder.getMovesC();
-        movablePiecesC = moveAndMovablePiecesHolder.getMovablePiecesC();
-        movablePiecesH = moveAndMovablePiecesHolder.getMovablePiecesH();
+        moveAndMovablePiecesHolderC = generateMovesC();
+        moveAndMovablePiecesHolderH = generateMovesH();
+        movesC = moveAndMovablePiecesHolderC.getMoves();
+        movablePiecesC = moveAndMovablePiecesHolderC.getMovablePieces();
+        movablePiecesH = moveAndMovablePiecesHolderH.getMovablePieces();
 
         if(movesC[0][0] == 0 && movesC[0][1] == 0 && movesC[0][2] == 0 && movesC[0][3] == 0 ){
-            return new MoveAndScoreHolder(-10000, null);
+            return humanMove ?  10000 : -10000; //new MovesAndScoreHolder(-10000, null);
         }
 
         for(int i=0;i<movablePiecesC.length;i++){
@@ -159,7 +258,7 @@ public class TrenchRun {
                 score += 50;
             }
             if(GameBoard[movablePiecesC[i][0]][movablePiecesC[i][1]] == 6){
-                score += 40;
+                score += 50;
             }
         }
         for(int i=0;i<movablePiecesH.length;i++){
@@ -167,11 +266,11 @@ public class TrenchRun {
                 score -= 50;
             }
             if(GameBoard[movablePiecesH[i][0]][movablePiecesH[i][1]] == 6){
-                score -= 40;
+                score -= 50;
             }
         }
 
-        for (int[] move1 : movesC) {
+        /*for (int[] move1 : movesC) {
             if (move1[0] != 0 || move1[1] != 0 || move1[2] != 0 || move1[3] != 0) {
                 for (int j = 0; j < move1.length; j++) {
                     score += 1;
@@ -180,11 +279,11 @@ public class TrenchRun {
         }
 
         if(humanMove){
-            moves = moveAndMovablePiecesHolder.getMovesH();
+            moves = moveAndMovablePiecesHolderH.getMoves();
         }else{
             moves = movesC;
-        }
-        return new MoveAndScoreHolder(score, moves);
+        }*/
+        return score;//new MovesAndScoreHolder(score, moves);
     }
 
     private void printMoves(int[][] moves) {
@@ -203,311 +302,332 @@ public class TrenchRun {
         }
     }
 
-    private MoveAndMovablePiecesHolder generateMoves(boolean humanMove, boolean playerTieJustMovedSideways, boolean computerTieJustMovedSideways){
-        int[][] movesC = new int[100][4];
-        int[][] movesH = new int[100][4];
-        int[][] movablePieces;
-        int[][] movablePiecesC = new int[8][2];
-        int[][] movablePiecesH = new int[8][2];
+    private MoveAndMovablePiecesHolder generateMovesC() {
+        int[][] movablePieces = new int[8][2];
+        int[][] moves = new int[100][4];
         int k = 0, l = 0;
 
-        //Get all pieces from board
-        for(int i=0; i<7; i++){
-            for(int j=0; j<7;j++){
-                if(GameBoard[i][j] == 5 || GameBoard[i][j] == 6){
-                    movablePiecesC[k][0] = i;
-                    movablePiecesC[k][1] = j;
+        //Get computer pieces from board
+        for (int i = 0; i < 7; i++) {
+            for (int j = 0; j < 7; j++) {
+                if (GameBoard[i][j] == 5 || GameBoard[i][j] == 6) {
+                    movablePieces[k][0] = i;
+                    movablePieces[k][1] = j;
                     k++;
                 }
             }
         }
-        for(int i=0; i<7; i++){
-            for(int j=0; j<7;j++){
-                if(GameBoard[i][j] == 1 || GameBoard[i][j] == 2){
-                    movablePiecesH[k][0] = i;
-                    movablePiecesH[k][1] = j;
-                    k++;
+        for(int i =0; i<k; i++) {
+            if (GameBoard[movablePieces[i][0]][movablePieces[i][1]] == 5) {
+                int x = movablePieces[i][0]-1;
+                int y = movablePieces[i][1];
+
+                //Forward for Computer Tie's
+                while(x > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2)){
+                    moves[l][0] = movablePieces[i][1];
+                    moves[l][1] = movablePieces[i][0];
+                    moves[l][2] = y;
+                    moves[l][3] = x;
+                    l++;
+                    if(GameBoard[x][y] != 0){
+                        break;
+                    }
+                    x--;
+                }
+
+                x = movablePieces[i][0]+1;
+                //Back for Computer Tie's
+                while(x < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2 || GameBoard[x][y] == 3)){
+                    if(GameBoard[x][y] == 1 || GameBoard[x][y] == 2 || GameBoard[x][y] == 3){
+                        moves[l][0] = movablePieces[i][1];
+                        moves[l][1] = movablePieces[i][0];
+                        moves[l][2] = y;
+                        moves[l][3] = x;
+                        l++;
+                    }
+                    if(GameBoard[x][y] != 0){
+                        break;
+                    }
+                    x++;
+                }
+                //Sideways for Computer Tie's
+                if(!ComputerTieJustMovedSideways) {
+                    x = movablePieces[i][0];
+                    y = movablePieces[i][1] + 1;
+                    //Right
+                    while (y < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2)) {
+                        moves[l][0] = movablePieces[i][1];
+                        moves[l][1] = movablePieces[i][0];
+                        moves[l][2] = y;
+                        moves[l][3] = x;
+                        l++;
+                        if(GameBoard[x][y] != 0){
+                            break;
+                        }
+                        y++;
+                    }
+                    y = movablePieces[i][1] - 1;
+                    //Left
+                    while (y > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2)) {
+                        moves[l][0] = movablePieces[i][1];
+                        moves[l][1] = movablePieces[i][0];
+                        moves[l][2] = y;
+                        moves[l][3] = x;
+                        l++;
+                        if(GameBoard[x][y] != 0){
+                            break;
+                        }
+                        y--;
+                    }
+                }
+
+            }else if(GameBoard[movablePieces[i][0]][movablePieces[i][1]] == 6) {
+                //Computer Forward (Down) Right X Wing
+                int x = movablePieces[i][0]-1;
+                int y = movablePieces[i][1]+1;
+                while(x > -1 && y < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2)){
+                    moves[l][0] = movablePieces[i][1];
+                    moves[l][1] = movablePieces[i][0];
+                    moves[l][2] = y;
+                    moves[l][3] = x;
+                    l++;
+                    if(GameBoard[x][y] != 0){
+                        break;
+                    }
+                    x--;
+                    y++;
+                }
+
+                //Computer Forward (Down) Left X Wing
+                x = movablePieces[i][0]-1;
+                y = movablePieces[i][1]-1;
+                while(x > -1 && y > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2)){
+                    moves[l][0] = movablePieces[i][1];
+                    moves[l][1] = movablePieces[i][0];
+                    moves[l][2] = y;
+                    moves[l][3] = x;
+                    l++;
+                    if(GameBoard[x][y] != 0){
+                        break;
+                    }
+                    x--;
+                    y--;
+                }
+
+                //Computer Backward (Up) Right X Wing
+                x = movablePieces[i][0]+1;
+                y = movablePieces[i][1]+1;
+                while(x < 7 && y < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2 || GameBoard[x][y] == 3)){
+                    if(GameBoard[x][y] == 1 || GameBoard[x][y] == 2 || GameBoard[x][y] == 3){
+                        moves[l][0] = movablePieces[i][1];
+                        moves[l][1] = movablePieces[i][0];
+                        moves[l][2] = y;
+                        moves[l][3] = x;
+                        l++;
+                    }
+                    if(GameBoard[x][y] != 0){
+                        break;
+                    }
+                    x++;
+                    y++;
+                }
+
+                //Computer Backward (Up) Left X Wing
+                x = movablePieces[i][0]+1;
+                y = movablePieces[i][1]-1;
+                while(x < 7 && y > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2 || GameBoard[x][y] == 3)){
+                    if(GameBoard[x][y] == 1 || GameBoard[x][y] == 2 || GameBoard[x][y] == 3){
+                        moves[l][0] = movablePieces[i][1];
+                        moves[l][1] = movablePieces[i][0];
+                        moves[l][2] = y;
+                        moves[l][3] = x;
+                        l++;
+                    }
+                    if(GameBoard[x][y] != 0){
+                        break;
+                    }
+                    x++;
+                    y--;
                 }
             }
         }
 
-        if(humanMove){
-            movablePieces = movablePiecesH;
-        }else{
-            movablePieces = movablePiecesC;
+        return new MoveAndMovablePiecesHolder(moves, movablePieces);
+    }
+
+    private MoveAndMovablePiecesHolder generateMovesH(){
+        int[][] movablePieces = new int[8][2];
+        int[][] moves = new int[100][4];
+        int k = 0, l = 0;
+
+        //Get human pieces from board
+        for(int i=0;i<7; i+=1){
+            for(int j=0; j<7;j++){
+                if(GameBoard[i][j] == 1 || GameBoard[i][j] == 2){
+                    movablePieces[k][0] = i;
+                    movablePieces[k][1] = j;
+                    k++;
+                }
+            }
         }
 
         //Determine all moves for pieces
-        for(int i =0; i<k; i++){
-            if(GameBoard[movablePieces[i][0]][movablePieces[i][1]] == 1 || GameBoard[movablePieces[i][0]][movablePieces[i][1]] == 5){
+        for(int i=0; i<k; i++){
+            if(GameBoard[movablePieces[i][0]][movablePieces[i][1]] == 1){
                 //Tie Fighters
-                if(humanMove){
-                    int x = movablePieces[i][0]+1;
-                    int y = movablePieces[i][1];
-                    //Forward for human Tie's
-                    while(x < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6)){
-                        movesH[l][0] = movablePieces[i][1];
-                        movesH[l][1] = movablePieces[i][0];
-                        movesH[l][2] = y;
-                        movesH[l][3] = x;
+                int x = movablePieces[i][0]+1;
+                int y = movablePieces[i][1];
+                //Forward for human Tie's
+                while(x < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6)){
+                    moves[l][0] = movablePieces[i][1];
+                    moves[l][1] = movablePieces[i][0];
+                    moves[l][2] = y;
+                    moves[l][3] = x;
+                    l++;
+                    if(GameBoard[x][y] != 0){
+                        break;
+                    }
+                    x++;
+                }
+                x = movablePieces[i][0]-1;
+                //Back for human Tie's
+                while(x > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6 || GameBoard[x][y] == 7)){
+                    if(GameBoard[x][y] == 5 || GameBoard[x][y] == 6 || GameBoard[x][y] == 7){
+                        moves[l][0] = movablePieces[i][1];
+                        moves[l][1] = movablePieces[i][0];
+                        moves[l][2] = y;
+                        moves[l][3] = x;
+                        l++;
+                    }
+                    if(GameBoard[x][y] != 0){
+                        break;
+                    }
+                    x--;
+                }
+                //Sideways for human Tie's
+                if(!PlayerTieJustMovedSideways){
+                    x = movablePieces[i][0];
+                    y = movablePieces[i][1]+1;
+                    //Right
+                    while(y < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6)){
+                        moves[l][0] = movablePieces[i][1];
+                        moves[l][1] = movablePieces[i][0];
+                        moves[l][2] = y;
+                        moves[l][3] = x;
                         l++;
                         if(GameBoard[x][y] != 0){
                             break;
                         }
-                        x++;
+                        y++;
                     }
-                    x = movablePieces[i][0]-1;
-                    //Back for human Tie's
-                    while(x > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6 || GameBoard[x][y] == 7)){
-                        if(GameBoard[x][y] == 5 || GameBoard[x][y] == 6 || GameBoard[x][y] == 7){
-                            movesH[l][0] = movablePieces[i][1];
-                            movesH[l][1] = movablePieces[i][0];
-                            movesH[l][2] = y;
-                            movesH[l][3] = x;
-                            l++;
-                        }
-                        if(GameBoard[x][y] != 0){
-                            break;
-                        }
-                        x--;
-                    }
-                    //Sideways for human Tie's
-                    if(!playerTieJustMovedSideways){
-                        x = movablePieces[i][0];
-                        y = movablePieces[i][1]+1;
-                        //Right
-                        while(y < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6)){
-                            movesH[l][0] = movablePieces[i][1];
-                            movesH[l][1] = movablePieces[i][0];
-                            movesH[l][2] = y;
-                            movesH[l][3] = x;
-                            l++;
-                            if(GameBoard[x][y] != 0){
-                                break;
-                            }                            
-                            y++;
-                        }
-                        y = movablePieces[i][1]-1;
-                        //Left
-                        while(y > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6)){
-                            movesH[l][0] = movablePieces[i][1];
-                            movesH[l][1] = movablePieces[i][0];
-                            movesH[l][2] = y;
-                            movesH[l][3] = x;
-                            l++;
-                            if(GameBoard[x][y] != 0){
-                                break;
-                            }                            
-                            y--;
-                        }
-                    }
-                }else{
-                    int x = movablePieces[i][0]-1;
-                    int y = movablePieces[i][1];
-
-                    //Forward for Computer Tie's
-                    while(x > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2)){
-                        movesC[l][0] = movablePieces[i][1];
-                        movesC[l][1] = movablePieces[i][0];
-                        movesC[l][2] = y;
-                        movesC[l][3] = x;
+                    y = movablePieces[i][1]-1;
+                    //Left
+                    while(y > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6)){
+                        moves[l][0] = movablePieces[i][1];
+                        moves[l][1] = movablePieces[i][0];
+                        moves[l][2] = y;
+                        moves[l][3] = x;
                         l++;
                         if(GameBoard[x][y] != 0){
                             break;
                         }
-                        x--;
-                    }
-
-                    x = movablePieces[i][0]+1;
-                    //Back for Computer Tie's
-                    while(x < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2 || GameBoard[x][y] == 3)){
-                        if(GameBoard[x][y] == 1 || GameBoard[x][y] == 2 || GameBoard[x][y] == 3){
-                            movesC[l][0] = movablePieces[i][1];
-                            movesC[l][1] = movablePieces[i][0];
-                            movesC[l][2] = y;
-                            movesC[l][3] = x;
-                            l++;
-                        }
-                        if(GameBoard[x][y] != 0){
-                            break;
-                        }
-                        x++;
-                    }
-                    //Sideways for Computer Tie's
-                    if(!computerTieJustMovedSideways) {
-                        x = movablePieces[i][0];
-                        y = movablePieces[i][1] + 1;
-                        //Right
-                        while (y < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2)) {
-                            movesC[l][0] = movablePieces[i][1];
-                            movesC[l][1] = movablePieces[i][0];
-                            movesC[l][2] = y;
-                            movesC[l][3] = x;
-                            l++;
-                            if(GameBoard[x][y] != 0){
-                                break;
-                            }                            
-                            y++;
-                        }
-                        y = movablePieces[i][1] - 1;
-                        //Left
-                        while (y > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2)) {
-                            movesC[l][0] = movablePieces[i][1];
-                            movesC[l][1] = movablePieces[i][0];
-                            movesC[l][2] = y;
-                            movesC[l][3] = x;
-                            l++;
-                            if(GameBoard[x][y] != 0){
-                                break;
-                            }                            
-                            y--;
-                        }
+                        y--;
                     }
                 }
-            }else if(GameBoard[movablePieces[i][0]][movablePieces[i][1]] == 2 || GameBoard[movablePieces[i][0]][movablePieces[i][1]] == 6){
+            }else if(GameBoard[movablePieces[i][0]][movablePieces[i][1]] == 2){
                 //X Wings
-                if(humanMove){
+                //Human Forward (Up) Right X Wing
+                int x = movablePieces[i][0]+1;
+                int y = movablePieces[i][1]+1;
+                while(x < 7 && y < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6)){
+                    moves[l][0] = movablePieces[i][1];
+                    moves[l][1] = movablePieces[i][0];
+                    moves[l][2] = y;
+                    moves[l][3] = x;
+                    l++;
+                    if(GameBoard[x][y] != 0){
+                        break;
+                    }
+                    x++;
+                    y++;
+                }
 
-                    //Human Forward (Up) Right X Wing
-                    int x = movablePieces[i][0]+1;
-                    int y = movablePieces[i][1]+1;
-                    while(x < 7 && y < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6)){
-                        movesH[l][0] = movablePieces[i][1];
-                        movesH[l][1] = movablePieces[i][0];
-                        movesH[l][2] = y;
-                        movesH[l][3] = x;
+                //Human Forward (Up) Left X Wing
+                x = movablePieces[i][0]+1;
+                y = movablePieces[i][1]-1;
+                while(x < 7 && y > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6)){
+                    moves[l][0] = movablePieces[i][1];
+                    moves[l][1] = movablePieces[i][0];
+                    moves[l][2] = y;
+                    moves[l][3] = x;
+                    l++;
+                    if(GameBoard[x][y] != 0){
+                        break;
+                    }
+                    x++;
+                    y--;
+                }
+
+                //Human Backward (Down) Right X Wing
+                x = movablePieces[i][0]-1;
+                y = movablePieces[i][1]+1;
+                while(x > -1 && y < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6 || GameBoard[x][y] == 7)){
+                    if(GameBoard[x][y] == 5 || GameBoard[x][y] == 6 || GameBoard[x][y] == 7){
+                        moves[l][0] = movablePieces[i][1];
+                        moves[l][1] = movablePieces[i][0];
+                        moves[l][2] = y;
+                        moves[l][3] = x;
                         l++;
-                        if(GameBoard[x][y] != 0){
-                            break;
-                        }
-                        x++;
-                        y++;
                     }
+                    if(GameBoard[x][y] != 0){
+                        break;
+                    }
+                    x--;
+                    y++;
+                }
 
-                    //Human Forward (Up) Left X Wing
-                    x = movablePieces[i][0]+1;
-                    y = movablePieces[i][1]-1;
-                    while(x < 7 && y > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6)){
-                        movesH[l][0] = movablePieces[i][1];
-                        movesH[l][1] = movablePieces[i][0];
-                        movesH[l][2] = y;
-                        movesH[l][3] = x;
+                //Human Backward (Down) Left X Wing
+                x = movablePieces[i][0]-1;
+                y = movablePieces[i][1]-1;
+                while(x > -1 && y > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6 || GameBoard[x][y] == 7)){
+                    if(GameBoard[x][y] == 5 || GameBoard[x][y] == 6 || GameBoard[x][y] == 7){
+                        moves[l][0] = movablePieces[i][1];
+                        moves[l][1] = movablePieces[i][0];
+                        moves[l][2] = y;
+                        moves[l][3] = x;
                         l++;
-                        if(GameBoard[x][y] != 0){
-                            break;
-                        }
-                        x++;
-                        y--;
                     }
-
-                    //Human Backward (Down) Right X Wing
-                    x = movablePieces[i][0]-1;
-                    y = movablePieces[i][1]+1;
-                    while(x > -1 && y < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6 || GameBoard[x][y] == 7)){
-                        if(GameBoard[x][y] == 5 || GameBoard[x][y] == 6 || GameBoard[x][y] == 7){
-                            movesH[l][0] = movablePieces[i][1];
-                            movesH[l][1] = movablePieces[i][0];
-                            movesH[l][2] = y;
-                            movesH[l][3] = x;
-                            l++;
-                        }
-                        if(GameBoard[x][y] != 0){
-                            break;
-                        }
-                        x--;
-                        y++;
+                    if(GameBoard[x][y] != 0){
+                        break;
                     }
-
-                    //Human Backward (Down) Left X Wing
-                    x = movablePieces[i][0]-1;
-                    y = movablePieces[i][1]-1;
-                    while(x > -1 && y > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 5 || GameBoard[x][y] == 6 || GameBoard[x][y] == 7)){
-                        if(GameBoard[x][y] == 5 || GameBoard[x][y] == 6 || GameBoard[x][y] == 7){
-                            movesH[l][0] = movablePieces[i][1];
-                            movesH[l][1] = movablePieces[i][0];
-                            movesH[l][2] = y;
-                            movesH[l][3] = x;
-                            l++;
-                        }
-                        if(GameBoard[x][y] != 0){
-                            break;
-                        }
-                        x--;
-                        y--;
-                    }
-                }else{
-                    //Computer Forward (Down) Right X Wing
-                    int x = movablePieces[i][0]-1;
-                    int y = movablePieces[i][1]+1;
-                    while(x > -1 && y < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2)){
-                        movesC[l][0] = movablePieces[i][1];
-                        movesC[l][1] = movablePieces[i][0];
-                        movesC[l][2] = y;
-                        movesC[l][3] = x;
-                        l++;
-                        if(GameBoard[x][y] != 0){
-                            break;
-                        }
-                        x--;
-                        y++;
-                    }
-
-                    //Computer Forward (Down) Left X Wing
-                    x = movablePieces[i][0]-1;
-                    y = movablePieces[i][1]-1;
-                    while(x > -1 && y > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2)){
-                        movesC[l][0] = movablePieces[i][1];
-                        movesC[l][1] = movablePieces[i][0];
-                        movesC[l][2] = y;
-                        movesC[l][3] = x;
-                        l++;
-                        if(GameBoard[x][y] != 0){
-                            break;
-                        }
-                        x--;
-                        y--;
-                    }
-
-                    //Computer Backward (Up) Right X Wing
-                    x = movablePieces[i][0]+1;
-                    y = movablePieces[i][1]+1;
-                    while(x < 7 && y < 7 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2 || GameBoard[x][y] == 3)){
-                        if(GameBoard[x][y] == 1 || GameBoard[x][y] == 2 || GameBoard[x][y] == 3){
-                            movesC[l][0] = movablePieces[i][1];
-                            movesC[l][1] = movablePieces[i][0];
-                            movesC[l][2] = y;
-                            movesC[l][3] = x;
-                            l++;
-                        }
-                        if(GameBoard[x][y] != 0){
-                            break;
-                        }
-                        x++;
-                        y++;
-                    }
-
-                    //Computer Backward (Up) Left X Wing
-                    x = movablePieces[i][0]+1;
-                    y = movablePieces[i][1]-1;
-                    while(x < 7 && y > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2 || GameBoard[x][y] == 3)){
-                        if(GameBoard[x][y] == 1 || GameBoard[x][y] == 2 || GameBoard[x][y] == 3){
-                            movesC[l][0] = movablePieces[i][1];
-                            movesC[l][1] = movablePieces[i][0];
-                            movesC[l][2] = y;
-                            movesC[l][3] = x;
-                            l++;
-                        }
-                        if(GameBoard[x][y] != 0){
-                            break;
-                        }
-                        x++;
-                        y--;
-                    }
+                    x--;
+                    y--;
                 }
             }
         }
 
-        return new MoveAndMovablePiecesHolder(movesC, movesH, movablePiecesC, movablePiecesH);
+        return new MoveAndMovablePiecesHolder(moves, movablePieces);
+    }
+
+    private int convertIntToFlippedBoard(int i){
+        switch (i){
+            case 0:
+                return 6;
+            case 1:
+                return 5;
+            case 2:
+                return 4;
+            case 3:
+                return 3;
+            case 4:
+                return 2;
+            case 5:
+                return 1;
+            case 6:
+                return 0;
+            default:
+                return -1;
+        }
     }
 
     private boolean isGameOver(boolean humanMove) {
@@ -517,13 +637,13 @@ public class TrenchRun {
         }
 
         if(humanMove){
-            moves = generateMoves(humanMove, PlayerTieJustMovedSideways, ComputerTieJustMovedSideways).movablePiecesH;
+            moves = generateMovesH().getMoves();
             if(moves[0][0] == 0 && moves[0][1] == 0 && moves[0][2] == 0 && moves[0][3] == 0){
                 Winner = 2;
                 return true;
             }
         }else{
-            moves = generateMoves(humanMove, PlayerTieJustMovedSideways, ComputerTieJustMovedSideways).movablePiecesH;
+            moves = generateMovesC().getMoves();
             if(moves[0][0] == 0 && moves[0][1] == 0 && moves[0][2] == 0 && moves[0][3] == 0){
                 Winner = 1;
                 return true;
@@ -533,7 +653,7 @@ public class TrenchRun {
         return false;
     }
 
-    private void getAndMakeMove(){
+    private void humanGetAndMakeMove(){
         Scanner input = new Scanner(System.in);
         System.out.print("Please enter your move in format \"A1B1\": ");
         String move = input.next();
@@ -546,7 +666,10 @@ public class TrenchRun {
         }
 
         makeFinalMove(move, true);
+
         displayBoard();
+
+        GameOver = isGameOver(false);
     }
 
     private boolean legalMove(String move) {
@@ -560,7 +683,15 @@ public class TrenchRun {
         int y = letterAxisToInt(move.charAt(2));
         int z = Character.getNumericValue(move.charAt(3))-1;
 
-        //Out of bounds move
+        int[][] moves = generateMovesH().getMoves();
+        int i = 0;
+        while(moves[i][0] != 0 || moves[i][1] != 0 || moves[i][2] != 0 || moves[i][3] != 0){
+            if(moves[i][0] == w && moves[i][1] == x && moves[i][2] == y && moves[i][3] == z){
+                return true;
+            }
+            i++;
+        }
+/*        //Out of bounds move
         if(w < 0 || w > 6 || x < 0 || x > 6 || y < 0 || y > 6 || z < 0 || z > 6){
             System.out.print("ERROR: Move out of bounds.");
             return false;
@@ -646,15 +777,17 @@ public class TrenchRun {
                 }else if(j > y-1){
                     j--;
                 }
-                if(GameBoard[i][j] != 0){
+                if(GameBoard[i][j] != 0 || GameBoard[z][y] != 5 || GameBoard[z][y] != 6 || GameBoard[z][y] != 7){
                     System.out.println("ERROR: Cannot jump over a piece.");
                     return false;
-                }
+                }else if(i)
             }
         }
 
 
-        return true;
+        return true;*/
+        System.out.print("ERROR: Illegal move. Try again. ");
+        return false;
     }
 
     private void makeFinalMove(String move, boolean humanMove) {
@@ -666,26 +799,10 @@ public class TrenchRun {
         GameBoard[z][y] = GameBoard[x][w];
         GameBoard[x][w] = 0;
 
-        if(humanMove){
-            if(GameBoard[z][y] == 1){
-                if(z == x && w != y){
-                    PlayerTieJustMovedSideways = true;
-                }else{
-                    PlayerTieJustMovedSideways = false;
-                }
-            }else{
-                PlayerTieJustMovedSideways = false;
-            }
+        if(humanMove) {
+            PlayerTieJustMovedSideways = GameBoard[z][y] == 1 && (z == x) && (w != y);
         }else {
-            if(GameBoard[z][y] == 5){
-                if(z == x && w != y){
-                    ComputerTieJustMovedSideways = true;
-                }else{
-                    ComputerTieJustMovedSideways = false;
-                }
-            }else{
-                ComputerTieJustMovedSideways = false;
-            }
+            ComputerTieJustMovedSideways = GameBoard[z][y] == 5 && (z == x) && (w != y);
         }
 
     }
@@ -760,10 +877,7 @@ public class TrenchRun {
         Scanner input = new Scanner(System.in);
         System.out.print("Do you want to go first? (yes no): ");
         String ans = input.next();
-        if(ans.equals("yes")){
-            return true;
-        }
-        return false;
+        return ans.equals("yes");
     }
 
     private void displayBoard(){
@@ -808,16 +922,34 @@ public class TrenchRun {
 
 }
 
-class MoveAndScoreHolder{
-    int score;
-    int[][] moves;
+class FinalComputerMoveHolder{
+    private String move;
+    private String convertedMove;
 
-    public MoveAndScoreHolder(int score, int[][] moves) {
+    public FinalComputerMoveHolder(String move, String convertedMove) {
+        this.move = move;
+        this.convertedMove = convertedMove;
+    }
+
+    public String getMove() {
+        return move;
+    }
+
+    public String getConvertedMove() {
+        return convertedMove;
+    }
+}
+
+class MovesAndScoreHolder {
+    private int score;
+    private int[][] moves;
+
+    MovesAndScoreHolder(int score, int[][] moves) {
         this.score = score;
         this.moves = moves;
     }
 
-    public int getScore() {
+    int getScore() {
         return score;
     }
 
@@ -826,32 +958,46 @@ class MoveAndScoreHolder{
     }
 }
 
+class OneMoveAndScoreHolder {
+    private int score;
+    private int[] move;
+
+    OneMoveAndScoreHolder(int score, int[] move) {
+        this.score = score;
+        this.move = move;
+    }
+
+    int getScore() {
+        return score;
+    }
+
+    void setScore(int score) {
+        this.score = score;
+    }
+
+    int[] getMove() {
+        return move;
+    }
+
+    void setMove(int[] move) {
+        this.move = move;
+    }
+}
+
 class MoveAndMovablePiecesHolder{
-    int[][] movesC;
-    int[][] movesH;
-    int[][] movablePiecesC;
-    int[][] movablePiecesH;
+    private int[][] moves;
+    int[][] movablePieces;
 
-    public MoveAndMovablePiecesHolder(int[][] movesC, int[][] movesH, int[][] movablePiecesC, int[][] movablePiecesH) {
-        this.movesC = movesC;
-        this.movesH = movesH;
-        this.movablePiecesC = movablePiecesC;
-        this.movablePiecesH = movablePiecesH;
+    MoveAndMovablePiecesHolder(int[][] moves, int[][] movablePieces) {
+        this.moves = moves;
+        this.movablePieces = movablePieces;
     }
 
-    public int[][] getMovesC() {
-        return movesC;
+    int[][] getMoves() {
+        return moves;
     }
 
-    public int[][] getMovesH() {
-        return movesH;
-    }
-
-    public int[][] getMovablePiecesC() {
-        return movablePiecesC;
-    }
-
-    public int[][] getMovablePiecesH() {
-        return movablePiecesH;
+    int[][] getMovablePieces() {
+        return movablePieces;
     }
 }
