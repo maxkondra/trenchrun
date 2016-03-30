@@ -38,6 +38,16 @@ public class TrenchRun {
                 { 0, 5, 5, 0, 5, 5, 0 }
         };
 
+        /*GameBoard = new int[][]{
+                { 0, 0, 0, 0, 1, 0, 0 },
+                { 0, 0, 4, 3, 4, 0, 0 },
+                { 0, 0, 0, 0, 2, 0, 0 },
+                { 0, 0, 0, 0, 0, 0, 0 },
+                { 0, 0, 0, 0, 0, 0, 6 },
+                { 5, 0, 8, 7, 8, 0, 0 },
+                { 0, 1, 5, 0, 5, 0, 0 }
+        };*/
+
         movesOnBoard = new Stack<>();
     }
 
@@ -59,7 +69,9 @@ public class TrenchRun {
             computerMakeMove();
 
             //Get Player Input
-            humanGetAndMakeMove();
+            if(!GameOver){
+                humanGetAndMakeMove();
+            }
         }
 
         //determine winner
@@ -119,11 +131,16 @@ public class TrenchRun {
         int moveScore;
         int i = 0;
         int[][] moves = generateMovesC().getMoves();
+        boolean bestMoveSet = false;
         while(moves[i][0] != 0 || moves[i][1] != 0 || moves[i][2] != 0 || moves[i][3] != 0){
             makeTempMove(moves[i], false);
             moveScore = min(0, maxDepth);
             if(moveScore > bestScore){
                 bestScore = moveScore;
+                best.setMove(moves[i]);
+                bestMoveSet = true;
+            }
+            if(!bestMoveSet){
                 best.setMove(moves[i]);
             }
             undoTempMove();
@@ -258,7 +275,7 @@ public class TrenchRun {
                 score += 50;
             }
             if(GameBoard[movablePiecesC[i][0]][movablePiecesC[i][1]] == 6){
-                score += 50;
+                score += 40;
             }
         }
         for(int i=0;i<movablePiecesH.length;i++){
@@ -266,7 +283,7 @@ public class TrenchRun {
                 score -= 50;
             }
             if(GameBoard[movablePiecesH[i][0]][movablePiecesH[i][1]] == 6){
-                score -= 50;
+                score -= 40;
             }
         }
 
