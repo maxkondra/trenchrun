@@ -15,6 +15,7 @@ public class TrenchRun {
     private int[][] GameBoard;
     private int MaxDepth = 4;
     private Stack<int[]> movesOnBoard;
+    private int Cuts;
     private boolean GameOver = false;
     private int Winner = 0; // 0 = no one, 1 = human, 2 = computer
 
@@ -109,10 +110,11 @@ public class TrenchRun {
     }
 
     private FinalComputerMoveHolder computerDecideAMove() {
+        Cuts = 0;
         OneMoveAndScoreHolder moveAndScore = miniMax(MaxDepth);
         int[] move = moveAndScore.getMove();
-
-        System.out.println("Final Move score: " + moveAndScore.getScore());
+        System.out.println("Best score of move was: " + moveAndScore.getScore());
+        System.out.println("Cuts made was: " + Cuts);
 
         return new FinalComputerMoveHolder(
                 String.valueOf(new char[]{
@@ -136,7 +138,7 @@ public class TrenchRun {
         boolean bestMoveSet = false;
         while(moves[i][0] != 0 || moves[i][1] != 0 || moves[i][2] != 0 || moves[i][3] != 0){
             makeTempMove(moves[i], false);
-            moveScore = min(0, maxDepth);
+            moveScore = min(0, maxDepth, 10000, bestScore);
             if(moveScore > bestScore){
                 bestScore = moveScore;
                 best.setMove(moves[i]);
@@ -154,14 +156,14 @@ public class TrenchRun {
         return best;
     }
 
-    private int min(int depth, int maxDepth) {
+    private int min(int depth, int maxDepth, int bestMinSoFar, int bestMaxSoFar) {
         if (isGameOver(true)){
             return 10000;
         }
         if (depth == maxDepth){
             return evaluatePosition(true);
         }
-        OneMoveAndScoreHolder best = new OneMoveAndScoreHolder(10000, null);
+        OneMoveAndScoreHolder best = new OneMoveAndScoreHolder(9999, null);
         int bestScore = best.getScore();
         int moveScore;
         int[][] moves = generateMovesH().getMoves();
@@ -169,10 +171,16 @@ public class TrenchRun {
         int i = 0;
         while(moves[i][0] != 0 || moves[i][1] != 0 || moves[i][2] != 0 || moves[i][3] != 0){
             makeTempMove(moves[i], true);
-            moveScore = max(depth+1, maxDepth);
+            moveScore = max(depth+1, maxDepth, bestMinSoFar, bestMaxSoFar);
+            if(moveScore < bestMaxSoFar){
+                undoTempMove();
+                Cuts++;
+                return moveScore;
+            }
             if(moveScore < bestScore){
                 bestScore = moveScore;
                 best.setMove(moves[i]);
+                bestMinSoFar = moveScore;
             }
             undoTempMove();
             i++;
@@ -181,14 +189,14 @@ public class TrenchRun {
         return bestScore;
     }
 
-    private int max(int depth, int maxDepth) {
+    private int max(int depth, int maxDepth, int bestMinSoFar, int bestMaxSoFar) {
         if (isGameOver(true)){
             return -10000;
         }
         if (depth == maxDepth){
             return evaluatePosition(false);
         }
-        OneMoveAndScoreHolder best = new OneMoveAndScoreHolder(-10000, null);
+        OneMoveAndScoreHolder best = new OneMoveAndScoreHolder(-9999, null);
         int bestScore = best.getScore();
         int moveScore;
         int[][] moves = generateMovesC().getMoves();
@@ -196,10 +204,16 @@ public class TrenchRun {
         int i = 0;
         while(moves[i][0] != 0 || moves[i][1] != 0 || moves[i][2] != 0 || moves[i][3] != 0){
             makeTempMove(moves[i], false);
-            moveScore = min(depth+1, maxDepth);
+            moveScore = min(depth+1, maxDepth, bestMinSoFar, bestMaxSoFar);
+            if(moveScore > bestMinSoFar){
+                undoTempMove();
+                Cuts++;
+                return moveScore;
+            }
             if(moveScore > bestScore){
                 bestScore = moveScore;
                 best.setMove(moves[i]);
+                bestMaxSoFar = moveScore;
             }
             undoTempMove();
             i++;
@@ -817,6 +831,10 @@ public class TrenchRun {
     }
 
     private void makeFinalMove(String move, boolean humanMove) {
+        while(!movesOnBoard.empty()){
+            undoTempMove();
+        }
+
         int w = letterAxisToInt(move.charAt(0));
         int x = Character.getNumericValue(move.charAt(1))-1;
         int y = letterAxisToInt(move.charAt(2));
