@@ -1,5 +1,6 @@
 import java.util.Scanner;
 import java.util.Stack;
+import java.util.concurrent.TimeUnit;
 
 public class TrenchRun {
     private static final String ANSI_RESET = "\u001B[0m";
@@ -17,6 +18,9 @@ public class TrenchRun {
     private Stack<int[]> movesOnBoard;
     private int Cuts;
     private boolean GameOver = false;
+    private long TimeStart;
+    long TimeLimit = TimeUnit.SECONDS.toNanos(5);
+
     private int Winner = 0; // 0 = no one, 1 = human, 2 = computer
 
     boolean PlayerTieJustMovedSideways = false;
@@ -110,8 +114,23 @@ public class TrenchRun {
     }
 
     private FinalComputerMoveHolder computerDecideAMove() {
-        Cuts = 0;
-        OneMoveAndScoreHolder moveAndScore = miniMax(MaxDepth);
+		Cuts = 0;
+        TimeStart = System.nanoTime();
+        int i = 0;
+        int depthSet = 0;
+        OneMoveAndScoreHolder moveAndScore = null;
+        while((System.nanoTime() - TimeStart) < TimeLimit){
+            OneMoveAndScoreHolder temp = miniMax(MaxDepth+i);
+            if(temp.getScore() != -13370){
+                if((MaxDepth+i) > depthSet){
+                    if(moveAndScore == null || (temp.getScore() > moveAndScore.getScore())){
+                        moveAndScore = temp;
+                    }
+                }
+            }
+            i++;
+        }
+        System.out.println("System went " + (MaxDepth+i-1) + " plies.");
         int[] move = moveAndScore.getMove();
         System.out.println("Best score of move was: " + moveAndScore.getScore());
         System.out.println("Cuts made was: " + Cuts);
@@ -137,16 +156,23 @@ public class TrenchRun {
         int[][] moves = generateMovesC().getMoves();
         boolean bestMoveSet = false;
         while(moves[i][0] != 0 || moves[i][1] != 0 || moves[i][2] != 0 || moves[i][3] != 0){
+            long temp = System.nanoTime();
+            long temp1 = temp - TimeStart;
+            if(temp1 > TimeLimit){
+                return new OneMoveAndScoreHolder(-13370, null);
+            }
             makeTempMove(moves[i], false);
             moveScore = min(0, maxDepth, 10000, bestScore);
-            if(moveScore > bestScore){
-                bestScore = moveScore;
-                best.setMove(moves[i]);
-                bestMoveSet = true;
+            if(moveScore != -13370) {
+                if (moveScore > bestScore) {
+                    bestScore = moveScore;
+                    best.setMove(moves[i]);
+                    bestMoveSet = true;
                 System.out.println("Minimax: "+ moveScore);
-            }
-            if(!bestMoveSet){
-                best.setMove(moves[i]);
+                }
+                if (!bestMoveSet) {
+                    best.setMove(moves[i]);
+                }
             }
             undoTempMove();
             i++;
@@ -163,24 +189,29 @@ public class TrenchRun {
         if (depth == maxDepth){
             return evaluatePosition(true);
         }
-        OneMoveAndScoreHolder best = new OneMoveAndScoreHolder(9999, null);
+        OneMoveAndScoreHolder best = new OneMoveAndScoreHolder(10000, null);
         int bestScore = best.getScore();
         int moveScore;
         int[][] moves = generateMovesH().getMoves();
 
         int i = 0;
         while(moves[i][0] != 0 || moves[i][1] != 0 || moves[i][2] != 0 || moves[i][3] != 0){
+            if((System.nanoTime() - TimeStart) > TimeLimit){
+                return -13370;
+            }
             makeTempMove(moves[i], true);
             moveScore = max(depth+1, maxDepth, bestMinSoFar, bestMaxSoFar);
-            if(moveScore < bestMaxSoFar){
+			if(moveScore < bestMaxSoFar){
                 undoTempMove();
                 Cuts++;
                 return moveScore;
             }
-            if(moveScore < bestScore){
-                bestScore = moveScore;
-                best.setMove(moves[i]);
-                bestMinSoFar = moveScore;
+            if(moveScore != -13370) {
+                if (moveScore < bestScore) {
+                    bestScore = moveScore;
+                    best.setMove(moves[i]);
+					bestMinSoFar = moveScore;
+                }
             }
             undoTempMove();
             i++;
@@ -196,13 +227,16 @@ public class TrenchRun {
         if (depth == maxDepth){
             return evaluatePosition(false);
         }
-        OneMoveAndScoreHolder best = new OneMoveAndScoreHolder(-9999, null);
+        OneMoveAndScoreHolder best = new OneMoveAndScoreHolder(-10000, null);
         int bestScore = best.getScore();
         int moveScore;
         int[][] moves = generateMovesC().getMoves();
 
         int i = 0;
         while(moves[i][0] != 0 || moves[i][1] != 0 || moves[i][2] != 0 || moves[i][3] != 0){
+            if((System.nanoTime() - TimeStart) > TimeLimit){
+                return -13370;
+            }
             makeTempMove(moves[i], false);
             moveScore = min(depth+1, maxDepth, bestMinSoFar, bestMaxSoFar);
             if(moveScore > bestMinSoFar){
@@ -210,10 +244,12 @@ public class TrenchRun {
                 Cuts++;
                 return moveScore;
             }
-            if(moveScore > bestScore){
-                bestScore = moveScore;
-                best.setMove(moves[i]);
-                bestMaxSoFar = moveScore;
+            if(moveScore != -13370) {
+                if (moveScore > bestScore) {
+                    bestScore = moveScore;
+                    best.setMove(moves[i]);
+					bestMaxSoFar = moveScore;
+                }
             }
             undoTempMove();
             i++;
@@ -356,7 +392,7 @@ public class TrenchRun {
                 int x = movablePieces[i][0]-1;
                 int y = movablePieces[i][1];
 
-                //Forward for Computer Tie's
+                //Forward for Computer's Ties
                 while(x > -1 && (GameBoard[x][y] == 0 || GameBoard[x][y] == 1 || GameBoard[x][y] == 2)){
                     moves[l][0] = movablePieces[i][1];
                     moves[l][1] = movablePieces[i][0];
