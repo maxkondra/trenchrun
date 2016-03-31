@@ -112,6 +112,8 @@ public class TrenchRun {
         OneMoveAndScoreHolder moveAndScore = miniMax(MaxDepth);
         int[] move = moveAndScore.getMove();
 
+        System.out.println("Final Move score: " + moveAndScore.getScore());
+
         return new FinalComputerMoveHolder(
                 String.valueOf(new char[]{
                         intAxisToLetter(move[0]),
@@ -139,6 +141,7 @@ public class TrenchRun {
                 bestScore = moveScore;
                 best.setMove(moves[i]);
                 bestMoveSet = true;
+                System.out.println("Minimax: "+ moveScore);
             }
             if(!bestMoveSet){
                 best.setMove(moves[i]);
@@ -279,10 +282,10 @@ public class TrenchRun {
             }
         }
         for(int i=0;i<movablePiecesH.length;i++){
-            if(GameBoard[movablePiecesH[i][0]][movablePiecesH[i][1]] == 5){
+            if(GameBoard[movablePiecesH[i][0]][movablePiecesH[i][1]] == 1){
                 score -= 50;
             }
-            if(GameBoard[movablePiecesH[i][0]][movablePiecesH[i][1]] == 6){
+            if(GameBoard[movablePiecesH[i][0]][movablePiecesH[i][1]] == 2){
                 score -= 40;
             }
         }
@@ -649,7 +652,13 @@ public class TrenchRun {
 
     private boolean isGameOver(boolean humanMove) {
         int[][] moves;
-        if(GameBoard[1][3] != 3 || GameBoard[5][3] != 7){
+        if(GameBoard[1][3] != 3){
+            Winner = 2;
+            return true;
+        }
+
+        if(GameBoard[5][3] != 7){
+            Winner = 1;
             return true;
         }
 
