@@ -2,7 +2,7 @@ import java.util.Scanner;
 import java.util.Stack;
 import java.util.concurrent.TimeUnit;
 
-public class TrenchRun {
+public class JawaStarDestroyer {
     private static final String ANSI_RESET = "\u001B[0m";
     private static final String ANSI_BLACK = "\u001B[30m";
     private static final String ANSI_RED = "\u001B[31m";
@@ -14,7 +14,7 @@ public class TrenchRun {
     private static final String ANSI_WHITE = "\u001B[37m";
 
     private int[][] GameBoard;
-    private int MaxDepth = 4;
+    private int MaxDepth = 3;
     private Stack<int[]> movesOnBoard;
     private int Cuts;
     private boolean GameOver = false;
@@ -26,7 +26,7 @@ public class TrenchRun {
     boolean PlayerTieJustMovedSideways = false;
     boolean ComputerTieJustMovedSideways = false;
 
-    public TrenchRun() {
+    public JawaStarDestroyer() {
         initializeBoard();
     }
 
@@ -976,27 +976,53 @@ public class TrenchRun {
 
     private String getPieceChar(int i){
         //- = 0, t = 1, x = 2, @ = 3, + = 4, T = 5, X = 6, * = 7, ~ = 8
-        switch (i){
-            case 0:
-                return "-";
-            case 1:
-                return ANSI_YELLOW + "t" + ANSI_RESET;
-            case 2:
-                return ANSI_YELLOW + "x" + ANSI_RESET;
-            case 3:
-                return ANSI_RED + "@" + ANSI_RESET;
-            case 4:
-                return ANSI_GREEN + "+" + ANSI_RESET;
-            case 5:
-                return ANSI_CYAN + "T" + ANSI_RESET;
-            case 6:
-                return ANSI_CYAN + "X" + ANSI_RESET;
-            case 7:
-                return ANSI_BLUE + "*" + ANSI_RESET;
-            case 8:
-                return ANSI_GREEN + "~" + ANSI_RESET;
-            default:
-                return "-";
+        String os = System.getProperty("os.name");
+        if(!os.contains("Windows")){
+            switch (i){
+                case 0:
+                    return "-";
+                case 1:
+                    return ANSI_YELLOW + "t" + ANSI_RESET;
+                case 2:
+                    return ANSI_YELLOW + "x" + ANSI_RESET;
+                case 3:
+                    return ANSI_RED + "@" + ANSI_RESET;
+                case 4:
+                    return ANSI_GREEN + "+" + ANSI_RESET;
+                case 5:
+                    return ANSI_CYAN + "T" + ANSI_RESET;
+                case 6:
+                    return ANSI_CYAN + "X" + ANSI_RESET;
+                case 7:
+                    return ANSI_BLUE + "*" + ANSI_RESET;
+                case 8:
+                    return ANSI_GREEN + "~" + ANSI_RESET;
+                default:
+                    return "-";
+            }
+        }else {
+            switch (i){
+                case 0:
+                    return "-";
+                case 1:
+                    return "t";
+                case 2:
+                    return "x";
+                case 3:
+                    return "@";
+                case 4:
+                    return "+";
+                case 5:
+                    return "T";
+                case 6:
+                    return "X";
+                case 7:
+                    return "*";
+                case 8:
+                    return "~";
+                default:
+                    return "-";
+            }
         }
     }
 
