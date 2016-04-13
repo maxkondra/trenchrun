@@ -1,7 +1,7 @@
 # trenchrun
 Trench Run for CSC 180 Spring 2016
 
-Download and compile to play against the AI
+Download and compile to play against the AI (you can run the "run game.bat" which is located under the src folder).
 
 THE GAME
 
