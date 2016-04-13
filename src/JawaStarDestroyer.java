@@ -43,21 +43,10 @@ public class JawaStarDestroyer {
                 { 0, 5, 5, 0, 5, 5, 0 }
         };
 
-        /*GameBoard = new int[][]{
-                { 0, 0, 0, 0, 1, 0, 0 },
-                { 0, 0, 4, 3, 4, 0, 0 },
-                { 0, 0, 0, 0, 2, 0, 0 },
-                { 0, 0, 0, 0, 0, 0, 0 },
-                { 0, 0, 0, 0, 0, 0, 6 },
-                { 5, 0, 8, 7, 8, 0, 0 },
-                { 0, 1, 5, 0, 5, 0, 0 }
-        };*/
-
         movesOnBoard = new Stack<>();
     }
 
     public void Play(){
-        //declare some stuff
 
         //Ask who goes first
         boolean humanFirst = humanFirst();
@@ -300,7 +289,6 @@ public class JawaStarDestroyer {
 
     private int evaluatePosition(boolean humanMove){
         int score = 0;
-        //int[][] moves;
         int[][] movesC;
         int[][] movablePiecesC;
         int[][] movablePiecesH;
@@ -340,20 +328,7 @@ public class JawaStarDestroyer {
             }
         }
 
-        /*for (int[] move1 : movesC) {
-            if (move1[0] != 0 || move1[1] != 0 || move1[2] != 0 || move1[3] != 0) {
-                for (int j = 0; j < move1.length; j++) {
-                    score += 1;
-                }
-            }
-        }
-
-        if(humanMove){
-            moves = moveAndMovablePiecesHolderH.getMoves();
-        }else{
-            moves = movesC;
-        }*/
-        return score;//new MovesAndScoreHolder(score, moves);
+        return score;
     }
 
     private void printMoves(int[][] moves) {
@@ -767,101 +742,7 @@ public class JawaStarDestroyer {
             }
             i++;
         }
-/*        //Out of bounds move
-        if(w < 0 || w > 6 || x < 0 || x > 6 || y < 0 || y > 6 || z < 0 || z > 6){
-            System.out.print("ERROR: Move out of bounds.");
-            return false;
-        }
 
-        //Trying to move something other than human tie fighter or x wing
-        if(GameBoard[x][w] != 1 && GameBoard[x][w] != 2){
-            System.out.print("ERROR: Can only move your own pieces.");
-            return false;
-        }
-
-        //Moving backwards and not capturing a piece.
-        if(x > z && (GameBoard[z][y] != 5 && GameBoard[z][y] != 6 && GameBoard[z][y] != 7)){
-            System.out.println("ERROR: Cannot move backwards if not capturing a piece.");
-            return false;
-        }
-
-        //Capturing your own piece or a wall
-        if(GameBoard[z][y] == 1 || GameBoard[z][y] == 2 || GameBoard[z][y] == 3 || GameBoard[z][y] == 4 || GameBoard[z][y] == 8){
-            System.out.println("ERROR: Cannot capture or own piece or land on a wall.");
-            return false;
-        }
-
-        //Trying to kill the Death Star head on you cheater?
-        if(GameBoard[z][y] == 7 && x < z){
-            System.out.println("ERROR: Can't destroy the Death Star head on.");
-            return false;
-        }
-
-        //Tie fighter moving illegally
-        if(GameBoard[x][w] == 1){
-
-            //Tie fighter just moved sideways last turn
-            if(z == x && w != y && PlayerTieJustMovedSideways){
-                System.out.println("ERROR: Just moved Tie Fighter sideways last turn.");
-                return false;
-            }
-
-            //Not moving horizontally or vertically
-            if(w != y && x != z) {
-                System.out.println("ERROR: Must move Tie Fighter horizontally or vertically.");
-                return false;
-            }
-
-            //Jumping over a piece
-            if(w == y){
-                for(int i = x+1; i < z; i++){
-                    if (GameBoard[i][w] != 0) {
-                        System.out.println("ERROR: Cannot jump over a piece.");
-                        return false;
-                    }
-                }
-            }
-            if(x == z){
-                for(int i = w+1; i < y; i++){
-                    if(GameBoard[x][i] != 0){
-                        System.out.println("ERROR: Cannot jump over a piece.");
-                        return false;
-                    }
-                }
-            }
-        }
-
-        //X Wing moving illegally
-        if(GameBoard[x][w] == 2){
-
-            //Not moving vertically
-            if(Math.abs(z-x) != Math.abs(y-w)){
-                System.out.println("ERROR: Must move X Wing diagonally.");
-                return false;
-            }
-
-            //Jumping over a piece
-            int i = x;
-            int j = w;
-            while(i != z-1 && j != y-1){
-                if(i < z-1){
-                    i++;
-                }else if(i > z-1){
-                    i--;
-                }if(j < y-1){
-                    j++;
-                }else if(j > y-1){
-                    j--;
-                }
-                if(GameBoard[i][j] != 0 || GameBoard[z][y] != 5 || GameBoard[z][y] != 6 || GameBoard[z][y] != 7){
-                    System.out.println("ERROR: Cannot jump over a piece.");
-                    return false;
-                }else if(i)
-            }
-        }
-
-
-        return true;*/
         System.out.print("ERROR: Illegal move. Try again. ");
         return false;
     }
@@ -886,30 +767,6 @@ public class JawaStarDestroyer {
         }
 
     }
-/*
-    private void makeFinalMove(String move, boolean humanTurn){
-        int w = letterAxisToInt(move.charAt(0));
-        int x = Character.getNumericValue(move.charAt(1))-1;
-        int y = letterAxisToInt(move.charAt(2));
-        int z = Character.getNumericValue(move.charAt(3))-1;
-
-        TempBoard[z][y] = TempBoard[x][w];
-        TempBoard[x][w] = 0;
-
-        if(TempBoard[z][y] == 1){
-            if(z == x && w != y){
-                if(humanTurn){
-                    playerMovedTieSideways = true;
-                }else{
-
-                }
-            }
-            }else{
-                PlayerTieJustMovedSideways = false;
-            }
-        }else{
-            PlayerTie
-    }*/
 
     private int letterAxisToInt(char c) {
         switch (c){
@@ -1043,24 +900,6 @@ class FinalComputerMoveHolder{
 
     public String getConvertedMove() {
         return convertedMove;
-    }
-}
-
-class MovesAndScoreHolder {
-    private int score;
-    private int[][] moves;
-
-    MovesAndScoreHolder(int score, int[][] moves) {
-        this.score = score;
-        this.moves = moves;
-    }
-
-    int getScore() {
-        return score;
-    }
-
-    public int[][] getMoves() {
-        return moves;
     }
 }
 
